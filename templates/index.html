@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceStruct — Voice to Structured Data</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #222222;
+    --accent: #00ff88;
+    --accent2: #0088ff;
+    --text: #f0f0f0;
+    --muted: #666;
+    --danger: #ff4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; }
+  header { padding: 28px 40px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
+  .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .badge { font-family: 'DM Mono', monospace; font-size: 10px; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--muted); }
+  main { max-width: 900px; margin: 0 auto; padding: 48px 40px; }
+  .hero { margin-bottom: 48px; }
+  .hero h1 { font-size: 42px; font-weight: 800; line-height: 1.1; letter-spacing: -1px; margin-bottom: 12px; }
+  .hero h1 em { color: var(--accent); font-style: normal; }
+  .hero p { color: var(--muted); font-size: 16px; line-height: 1.6; max-width: 500px; }
+  .upload-zone { border: 1px dashed var(--border); border-radius: 12px; padding: 48px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface); margin-bottom: 24px; position: relative; }
+  .upload-zone:hover { border-color: var(--accent); background: rgba(0,255,136,0.03); }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 32px; margin-bottom: 12px; }
+  .upload-zone h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .upload-zone p { font-size: 13px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .record-btn { width: 100%; padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 24px; }
+  .record-btn:hover { border-color: var(--accent2); }
+  .record-btn.recording { border-color: var(--danger); color: var(--danger); animation: pulse 1.5s infinite; }
+  .record-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+  .process-btn { width: 100%; padding: 18px; border-radius: 10px; border: none; background: var(--accent); color: #000; font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .process-btn:hover { background: #00cc70; transform: translateY(-1px); }
+  .process-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .status { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); text-align: center; padding: 16px; display: none; }
+  .status.active { display: block; }
+  .results { margin-top: 48px; display: none; }
+  .results.active { display: block; }
+  .section-title { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; }
+  .transcript-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.8; color: #ccc; margin-bottom: 32px; max-height: 200px; overflow-y: auto; }
+  .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .card.full { grid-column: 1 / -1; }
+  .card h3 { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--accent2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+  .summary-text { font-size: 15px; line-height: 1.7; color: #ddd; }
+  .pill-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-family: 'DM Mono', monospace; color: #bbb; }
+  .pill.green { border-color: rgba(0,255,136,0.3); color: var(--accent); background: rgba(0,255,136,0.05); }
+  .pill.blue { border-color: rgba(0,136,255,0.3); color: var(--accent2); background: rgba(0,136,255,0.05); }
+  .action-item { border-left: 2px solid var(--accent); padding: 10px 14px; margin-bottom: 10px; background: rgba(0,255,136,0.03); border-radius: 0 6px 6px 0; }
+  .action-item .task { font-size: 14px; color: var(--text); margin-bottom: 4px; }
+  .action-item .meta { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); }
+  .fact-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: #bbb; }
+  .fact-item:last-child { border-bottom: none; }
+  .sentiment-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .sentiment-positive { background: rgba(0,255,136,0.1); color: var(--accent); }
+  .sentiment-negative { background: rgba(255,68,68,0.1); color: var(--danger); }
+  .sentiment-neutral { background: rgba(255,255,255,0.05); color: var(--muted); }
+  .sentiment-mixed { background: rgba(0,136,255,0.1); color: var(--accent2); }
+  .export-btn { padding: 12px 24px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-right: 10px; margin-top: 24px; }
+  .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+  #file-label { font-size: 13px; color: var(--accent); font-family: 'DM Mono', monospace; text-align: center; margin-bottom: 16px; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Voice<span>Struct</span></div>
+  <div class="badge">v1.0 · Whisper + Claude</div>
+</header>
+<main>
+  <div class="hero">
+    <h1>Turn any conversation<br>into <em>structured data</em></h1>
+    <p>Upload or record a meeting, interview, or call. Get action items, decisions, key facts, and follow-ups — instantly.</p>
+  </div>
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="audioInput" accept="audio/*,video/*" />
+    <div class="upload-icon">🎙</div>
+    <h3>Drop your audio file here</h3>
+    <p>MP3, M4A, WAV, MP4 · max 25MB</p>
+  </div>
+  <div id="file-label"></div>
+  <button class="record-btn" id="recordBtn">
+    <div class="record-dot"></div>
+    <span id="recordLabel">Record live audio</span>
+  </button>
+  <button class="process-btn" id="processBtn" disabled>Process audio →</button>
+  <div class="status" id="status">Initializing...</div>
+  <div class="results" id="results">
+    <div class="section-title">Transcript</div>
+    <div class="transcript-box" id="transcriptBox"></div>
+    <div class="section-title">Structured output</div>
+    <div class="cards-grid">
+      <div class="card full"><h3>Summary</h3><div class="summary-text" id="summaryText"></div></div>
+      <div class="card"><h3>Sentiment</h3><div id="sentimentBadge"></div></div>
+      <div class="card"><h3>Topics</h3><div class="pill-list" id="topicsList"></div></div>
+      <div class="card"><h3>Participants</h3><div class="pill-list" id="participantsList"></div></div>
+      <div class="card full"><h3>Action items</h3><div id="actionItems"></div></div>
+      <div class="card"><h3>Decisions</h3><div id="decisionsList"></div></div>
+      <div class="card"><h3>Follow-ups</h3><div id="followUpsList"></div></div>
+      <div class="card full"><h3>Key facts</h3><div class="pill-list" id="keyFacts"></div></div>
+    </div>
+    <button class="export-btn" id="exportJson">Export JSON</button>
+    <button class="export-btn" id="exportMd">Export Markdown</button>
+  </div>
+</main>
+<script>
+let audioBlob = null, mediaRecorder = null, chunks = [], isRecording = false, structuredData = null, transcriptText = '';
+const audioInput = document.getElementById('audioInput');
+const uploadZone = document.getElementById('uploadZone');
+const recordBtn = document.getElementById('recordBtn');
+const processBtn = document.getElementById('processBtn');
+const status = document.getElementById('status');
+const results = document.getElementById('results');
+const fileLabel = document.getElementById('file-label');
+
+audioInput.addEventListener('change', e => {
+  if (e.target.files[0]) { audioBlob = e.target.files[0]; fileLabel.style.display = 'block'; fileLabel.textContent = '✓ ' + e.target.files[0].name; processBtn.disabled = false; }
+});
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.style.borderColor = 'var(--accent)'; });
+uploadZone.addEventListener('dragleave', () => uploadZone.style.borderColor = '');
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file) { audioBlob = file; fileLabel.style.display = 'block'; fileLabel.textContent = '✓ ' + file.name; processBtn.disabled = false; }
+});
+recordBtn.addEventListener('click', async () => {
+  if (!isRecording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream); chunks = [];
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      mediaRecorder.onstop = () => { audioBlob = new Blob(chunks, { type: 'audio/webm' }); fileLabel.style.display = 'block'; fileLabel.textContent = '✓ Live recording ready'; processBtn.disabled = false; stream.getTracks().forEach(t => t.stop()); };
+      mediaRecorder.start(); isRecording = true; recordBtn.classList.add('recording'); document.getElementById('recordLabel').textContent = 'Stop recording';
+    } catch (err) { alert('Microphone access denied'); }
+  } else { mediaRecorder.stop(); isRecording = false; recordBtn.classList.remove('recording'); document.getElementById('recordLabel').textContent = 'Record live audio'; }
+});
+processBtn.addEventListener('click', async () => {
+  if (!audioBlob) return;
+  processBtn.disabled = true; results.classList.remove('active');
+  setStatus('Transcribing audio with Whisper...');
+  const formData = new FormData();
+  formData.append('audio', audioBlob, 'audio.mp3');
+  try {
+    const transcribeRes = await fetch('/transcribe', { method: 'POST', body: formData });
+    const transcribeData = await transcribeRes.json();
+    if (transcribeData.error) throw new Error(transcribeData.error);
+    transcriptText = transcribeData.transcript;
+    setStatus('Extracting structure with Claude...');
+    const extractRes = await fetch('/extract', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transcript: transcriptText }) });
+    const
